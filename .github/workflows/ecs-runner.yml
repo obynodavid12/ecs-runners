@@ -1,0 +1,125 @@
+name: "Terraform-Apply"
+
+# Controls when the workflow will run
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+    
+jobs:
+  terraform:
+    name: 'Terraform'
+    runs-on: ubuntu-latest
+    env:
+      PAT: ${{ secrets.PAT }} 
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      AWS_REGION: ${{ secrets.AWS_REGION }}
+      AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
+      REPO: ${{ secrets.REPO }}
+      ORG: ${{ secrets.ORG }}
+    defaults:
+      run:
+        working-directory: "."   
+    # Checkout the repository to the GitHub Actions runner
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+      
+    
+    # Install the latest version of Terraform CLI and configure the Terraform CLI configuration file with a Terraform Cloud user API token
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v1    
+      with:
+        cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
+        #cli_config_credentials_hostname: ${{ secrets.TF_HOSTNAME}}
+        terraform_wrapper: false
+
+    
+    - name: Terraform Format
+      id: fmt
+      run: terraform fmt -check
+
+    - name: Terraform Init
+      id: init
+      run: terraform init
+      
+    - name: Terraform Validate
+      id: validate
+      run: terraform validate -no-color
+
+          
+    - name: Terraform Plan
+      id: plan
+      if: github.event_name == 'push'
+      run: terraform plan -no-color
+      continue-on-error: true
+
+    - name: Terraform Plan Status 
+      if: steps.plan.outcome == 'failure'
+      run: exit 1
+                  
+    - name: Terraform Apply
+      if: github.ref == 'refs/heads/master'
+      run: terraform apply -auto-approve -var "PAT=${{ secrets.PAT }}, var ORG=${{ secrets.ORG }}, var_REPO=${{ secrets.REPO }}, var_AWS_REGION=${{ secrets.AWS_DEFAULT_REGION }}, var.AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }}, var.AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }}" 
+                
+                
+    - name: Save Terraform Output
+      run: terraform output -json > tfoutput.json
+      shell: bash
+
+    - name: Upload output file
+      uses: actions/upload-artifact@v2
+      with:
+        name: terraform-output
+        path: |
+           tfoutput.json
+           
+      
+
+    # - name: Terraform destroy
+    #   if: github.ref == 'refs/heads/master' && github.event_name == 'push'
+    #   id: destroy
+    #   run: terraform destroy -auto-approve
+  
+  build:
+    name: 'docker-image'
+    runs-on: ubuntu-latest
+        
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+    
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v1
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ secrets.AWS_REGION }}
+        ECR_REPOSITORY: ${{ secrets.ECR_REPOSITORY }}
+        
+   
+    - name: Login to Amazon ECR
+      id: login-ecr
+      uses: aws-actions/amazon-ecr-login@v1
+
+    - name: Docker Push
+      env:
+        ECR_REPOSITORY: ${{ secrets.ECR_REPOSITORY }}
+        ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+        IMAGE_TAG: ${{ github.sha }}
+      run: |  
+        cd self-host-runner-ECS
+        docker build -f Dockerfile -q -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+        echo "Pushing image to ECR..."
+        docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+        echo "::set-output name=image::$ECR_REGISTRY/${{ env.ECR_REPOSITORY }}:$IMAGE_TAG" 
+        aws ecs update-service --cluster ecs-runner-cluster --service ecs-runner-ecs-service --force-new-deployment
+        
+        #docker build -f Dockerfile -q -t ecs-runner .
+        #docker tag ecs-runner $AWS_ACCOUNT_ID.dkr.ecr.us-east-2.amazonaws.com/ecs-runner
+        #docker push $AWS_ACCOUNT_ID.dkr.ecr.us-east-2.amazonaws.com/ecs-runner
+        
+    
+    
