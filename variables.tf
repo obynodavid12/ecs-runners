@@ -1,20 +1,20 @@
 variable "PAT" {
   description = "personal access token"
-  default     = ""    
+  default     = ""
 }
 variable "ORG" {
   description = "org name of repo"
   default     = "https://github.com/{owner}"
 }
 variable "REPO" {
-   description = "repo name"
-   default     = "ecs-runners" 
+  description = "repo name"
+  default     = "ecs-runners"
 }
 variable "AWS_REGION" {
-   description = "region"
+  description = "region"
   default     = "us-east-2"
 }
-  
+
 variable "AWS_SECRET_ACCESS_KEY" {
   description = "aws secret access key"
   default     = ""
