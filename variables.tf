@@ -4,7 +4,7 @@ variable "PAT" {
 }
 variable "ORG" {
   description = "org name of repo"
-  default     = "https://github.com/{owner}"
+  default     = "obynodavid12"
 }
 variable "REPO" {
   description = "repo name"
