@@ -62,7 +62,9 @@ jobs:
                   
     - name: Terraform Apply
       if: github.ref == 'refs/heads/master'
-      run: ./tf_apply.sh
+      run: |
+        chmod +x tf_apply.sh
+        ./tf_apply.sh
       #terraform apply -auto-approve -var "PAT=${{ secrets.PAT }}, ORG=${{ secrets.ORG }}, REPO=${{ secrets.REPO }}, AWS_REGION=${{ secrets.AWS_DEFAULT_REGION }}, AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }}, AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }}" 
                 
                 
