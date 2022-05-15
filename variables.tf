@@ -1,9 +1,28 @@
-variable "PAT" {}
-variable "ORG" {}
-variable "REPO" {}
-variable "AWS_REGION" {}
-variable "AWS_SECRET_ACCESS_KEY" {}
-variable "AWS_ACCESS_KEY_ID" {}
+variable "PAT" {
+  description = "personal access token"
+  default     = ""    
+}
+variable "ORG" {
+  description = "org name of repo"
+  default     = "https://github.com/{owner}"
+}
+variable "REPO" {
+   description = "repo name"
+   default     = "ecs-runners" 
+}
+variable "AWS_REGION" {
+   description = "region"
+  default     = "us-east-2"
+}
+  
+variable "AWS_SECRET_ACCESS_KEY" {
+  description = "aws secret access key"
+  default     = ""
+}
+variable "AWS_ACCESS_KEY_ID" {
+  description = "aws access key id"
+  default     = ""
+}
 
 variable "PREFIX" {
   default = "ecs-runner"
