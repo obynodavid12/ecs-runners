@@ -81,10 +81,10 @@ jobs:
            
       
 
-    # - name: Terraform destroy
-    #   if: github.ref == 'refs/heads/master' && github.event_name == 'push'
-    #   id: destroy
-    #   run: terraform destroy -auto-approve
+    - name: Terraform destroy
+      if: github.ref == 'refs/heads/master' && github.event_name == 'push'
+      id: destroy
+      run: terraform destroy -auto-approve
   
   build:
     needs: terraform
@@ -123,6 +123,7 @@ jobs:
         echo "::set-output name=image::$ECR_REGISTRY/${{ env.ECR_REPOSITORY }}:$IMAGE_TAG" 
         aws ecs update-service --cluster ecs-runner-cluster --service ecs-runner-ecs-service --force-new-deployment
         docker run -d $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+        docker logs 
         
         #docker build -f Dockerfile -q -t ecs-runner .
         #docker tag ecs-runner $AWS_ACCOUNT_ID.dkr.ecr.us-east-2.amazonaws.com/ecs-runner
