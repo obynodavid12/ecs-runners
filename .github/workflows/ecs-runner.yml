@@ -84,10 +84,14 @@ jobs:
     #   run: terraform destroy -auto-approve
   
   build:
-    name: 'docker-image'
+    needs: terraform
     runs-on: ubuntu-latest
-        
     steps:
+    - name: Download terraform output file
+      uses: actions/download-artifact@v2
+      with:
+        name: terraform-output
+        
     - name: Checkout
       uses: actions/checkout@v2
     
