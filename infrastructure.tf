@@ -273,7 +273,7 @@ resource "aws_ecs_task_definition" "task_definition" {
         "valueFrom": "${var.REPO}"
       },
       {
-        "name": "AWS_DEFAULT_REGION",
+        "name": "AWS_REGION",
         "valueFrom": "${var.AWS_REGION}"
       },
       {
