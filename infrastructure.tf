@@ -20,12 +20,100 @@ terraform {
 }
 
 # VPC
-data "aws_vpc" "default" {
-  default = true
+resource "aws_vpc" "vpc" {
+  cidr_block        = var.vpc_cidr
+  instance_tenancy  = "default"
+
+  tags = {
+    Name = "${var.PREFIX}-vpc"
+  }
 }
 
-data "aws_subnet_ids" "default" {
-  vpc_id = "${data.aws_vpc.default.id}"
+# Internet Gateway for the Public Subnets
+resource "aws_internet_gateway" "int_gateway" {
+  vpc_id = aws_vpc.vpc.id
+
+  tags = {
+    Name = "${var.PREFIX}_int_gateway"
+  }
+}
+
+# Private subnet
+resource "aws_subnet" "private_subnet" {
+  vpc_id            = aws_vpc.vpc.id
+  cidr_block        = var.private_subnet_cidr
+  availability_zone = "ap-northeast-1c"
+
+  tags = {
+    Name = "${var.PREFIX}_private_subnet"
+  }
+}
+
+# Public subnet
+resource "aws_subnet" "public_subnet" {
+  vpc_id            = aws_vpc.vpc.id
+  cidr_block        = var.public_subnet_cidr
+  availability_zone = "ap-northeast-1c"
+
+  tags = {
+    Name = "${var.PREFIX}_public_subnet"
+  }
+}
+
+# Nat Gateway for private subnet
+resource "aws_eip" "nat_gateway_eip" {
+  vpc = true
+  tags = {
+    Name = "${var.PREFIX}_nat_gateway_eip"
+  }
+}
+
+resource "aws_nat_gateway" "nat_gateway" {
+  allocation_id = aws_eip.nat_gateway_eip.id
+  subnet_id     = aws_subnet.public_subnet.id
+
+  tags = {
+    Name = "${var.PREFIX}_nat_gateway"
+  }
+}
+
+# Public route table
+resource "aws_route_table" "route_table_public" {
+  vpc_id = aws_vpc.vpc.id
+
+  route {
+    cidr_block = "0.0.0.0/0"
+    gateway_id = aws_internet_gateway.int_gateway.id
+  }
+
+  tags = {
+    Name = "${var.PREFIX}_public"
+  }
+}
+
+# Private route table
+resource "aws_route_table" "route_table_private" {
+  vpc_id = aws_vpc.vpc.id
+
+  route {
+    cidr_block = "0.0.0.0/0"
+    gateway_id = aws_nat_gateway.nat_gateway.id
+  }
+
+  tags = {
+    Name = "${var.PREFIX}_private"
+  }
+}
+
+# Associations
+resource "aws_route_table_association" "assoc_1" {
+  subnet_id      = aws_subnet.public_subnet.id
+  route_table_id = aws_route_table.route_table_public.id
+}
+
+resource "aws_route_table_association" "assoc_2" {
+  subnet_id      = aws_subnet.private_subnet.id
+  route_table_id = aws_route_table.route_table_private.id
 }
   
 
@@ -92,8 +180,8 @@ resource "aws_ecs_task_definition" "task_definition" {
   family                   = "${var.PREFIX}-task-def"
   network_mode             = "awsvpc"
   requires_compatibilities = ["FARGATE"]
-  cpu                      = 1024
-  memory                   = "2048"   
+  cpu                      = 512
+  memory                   = "1024"   
   task_role_arn            = aws_iam_role.ecs_task_execution_role.arn
   execution_role_arn       = aws_iam_role.ecs_task_execution_role.arn
   container_definitions    = <<TASK_DEFINITION
@@ -180,7 +268,7 @@ resource "aws_ecs_service" "ecs_service" {
 
   network_configuration {
     security_groups  = [aws_security_group.ecs_sg.id]
-    subnets          = data.aws_subnet_ids.default.ids
+    subnets          = [aws_subnet.private_subnet.id]
     assign_public_ip = false
   }
 }
