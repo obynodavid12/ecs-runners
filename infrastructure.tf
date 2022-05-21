@@ -209,27 +209,27 @@ resource "aws_ecs_task_definition" "task_definition" {
       "command": ["./start.sh"],
       "environment": [{
         "name": "PAT",
-        "value": "${var.PREFIX}-PAT"
+        "value": "${var.PAT}"
       },
       {
         "name": "ORG",
-        "value": "${var.PREFIX}-ORG"
+        "value": "${var.ORG}"
       },
       {
         "name": "REPO",
-        "value": "${var.PREFIX}-REPO"
+        "value": "${var.REPO}"
       },
       {
         "name": "AWS_REGION",
-        "value": "${var.PREFIX}-AWS_REGION"
+        "value": "${var.AWS_REGION}"
       },
       {
         "name": "AWS_SECRET_ACCESS_KEY",
-        "value": "${var.PREFIX}-AWS_SECRET_ACCESS_KEY"
+        "value": "${var.AWS_SECRET_ACCESS_KEY}"
       },
       {
         "name": "AWS_ACCESS_KEY_ID",
-        "value": "${var.PREFIX}-AWS_ACCESS_KEY_ID"
+        "value": "${var.AWS_ACCESS_KEY_ID}"
       }]
     }
   ]
