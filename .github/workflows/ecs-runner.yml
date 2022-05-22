@@ -19,9 +19,7 @@ jobs:
       AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
       REPO: ${{ secrets.REPO }}
       ORG: ${{ secrets.ORG }}
-    defaults:
-      run:
-        working-directory: "."   
+     
     # Checkout the repository to the GitHub Actions runner
     steps:
     - name: Checkout
